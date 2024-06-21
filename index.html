@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <title>PR Generator</title>
+    <script>
+        // Your Google Sheets API key
+        const apiKey = 'AIzaSyB91grYYNrZXWlRVTXyM7fLRsxcpnNkvWo';
+        // The ID of your Google Sheet
+        const sheetId = '1YnjgxCUXEFJF76zlFuVa1PVQlpAXuPsVWlL4reVpdvE';
+        // The range of data you want to fetch
+        const range = 'Sheet1!A1:F20';
+
+        function loadSheetData() {
+            fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`)
+                .then(response => response.json())
+                .then(data => {
+                    populateDropdowns(data.values);
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        function populateDropdowns(data) {
+            const servicesDropdown = document.getElementById('service');
+            const environmentsDropdown = document.getElementById('environment');
+            
+            // Clear existing options
+            servicesDropdown.innerHTML = '';
+            environmentsDropdown.innerHTML = '';
+
+            // Populate services dropdown
+            const services = data.slice(1).map(row => row[0]);
+            services.forEach(service => {
+                const option = document.createElement('option');
+                option.value = service;
+                option.textContent = service;
+                servicesDropdown.appendChild(option);
+            });
+
+            // Populate environments dropdown
+            const environments = data[0].slice(1);
+            environments.forEach(environment => {
+                const option = document.createElement('option');
+                option.value = environment;
+                option.textContent = environment;
+                environmentsDropdown.appendChild(option);
+            });
+        }
+
+        function generateURL() {
+            const service = document.getElementById('service').value;
+            const environment = document.getElementById('environment').value;
+            const branch = document.getElementById('branch').value;
+            
+            fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`)
+                .then(response => response.json())
+                .then(data => {
+                    const row = data.values.find(row => row[0] === service);
+                    const envIndex = data.values[0].indexOf(environment);
+                    const destination = row[envIndex];
+                    
+                    if (destination) {
+                        const url = `https://bitbucket.org/vymo/${service}/pull-requests/new?source=${branch}&dest=${destination}`;
+                        const output = document.getElementById('output');
+                        output.innerHTML = `<a href="${url}" target="_blank">${url}</a>`;
+                    } else {
+                        document.getElementById('output').innerText = 'No destination value found for the selected service and environment.';
+                    }
+                })
+                .catch(error => console.error('Error generating URL:', error));
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                generateURL();
+            }
+        }
+
+        // Load the Google Sheet data when the page loads
+        window.onload = loadSheetData;
+    </script>
+</head>
+<body>
+    <h1>URL Generator</h1>
+    
+    <label for="service">Select Service:</label>
+    <select id="service"></select>
+    
+    <label for="environment">Select Environment:</label>
+    <select id="environment"></select>
+    
+    <label for="branch">Enter Branch Name:</label>
+    <input type="text" id="branch" onkeypress="handleKeyPress(event)" placeholder="Enter your branch name">
+    
+    <button onclick="generateURL()">Submit</button>
+    <div>Generated URL: 
+        <p id="output"></p>
+    </div>
+    
+</body>
+</html>
