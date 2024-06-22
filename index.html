@@ -3,9 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Generator</title>
+    <!-- Include jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Include Bootstrap JS -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- Include Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Include Select2 CSS and JS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <title>PR Generator</title>
+    <!-- Include Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <!-- Include Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+
+    <style>
+        .select-box {
+            height: 36px !important;
+            padding: 4px !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="container mt-5">
+        <div class="d-flex justify-content-center">
+            <p class="h1">Branch Navigator</p>
+        </div> 
+        <hr class="solid">
+        <!-- First Part: Select Service, Select Environment, Destination Value -->
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="service">Select Service:</label>
+                    <select id="service" class="form-control" v-model="selectedService" @change="showDestination" ref="serviceSelect">
+                        <option v-for="service in services" :value="service">{{ service }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="environment">Select Environment:</label>
+                    <select id="environment" class="form-control p-4" v-model="selectedEnvironment" @change="showDestination" ref="environmentSelect">
+                        <option v-for="environment in environments" :value="environment">{{ environment }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="destination">Destination Value:</label>
+                    <div class="input-group">
+                        <input type="text" id="destination" class="form-control" v-model="destination" readonly>
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" @click="copyDestination">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="solid">
+
+        <!-- Second Part: Create Branch -->
+        <div v-if="showCreateBranch" class="mt-4">
+            <label class="h3">Create New Branch</label>
+            <div class="row mt-4">
+                <div class="col-md-8">
+                    <div class="form-group">
+                        <input type="text" id="branchName" class="form-control" v-model="branchName" @keypress.enter="createBranch" placeholder="Enter branch name">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-primary" @click="createBranch">Create Branch</button>
+                </div>
+            </div>
+            <div v-if="loading" class="spinner-border" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+            <div v-if="newBranchCreated">
+                <div class="mt-2">Branch URL: <a :href=newBranchUrl>{{newBranchUrl}}</a></div>
+                <div class="mt-1"><code>git fetch</code><button type="button" class="btn btn-link"><i class="fa fa-copy" @click="copyValue('git fetch')"></i></button></div>
+                <div class="mt-1"><code>git checkout {{branchName}}</code><button type="button" class="btn btn-link"><i class="fa fa-copy" @click="copyValue(`git checkout ${branchName}`)"></i></button></div>
+            </div>
+            <hr class="solid">
+        </div>
+
+
+        <!-- Third Part: Create PR -->
+        <div v-if="showCreatePR" class="mt-4">
+            <label class="h3">Create Pull Request</label>
+            <div v-if="hasBitbucketCredentials" class="row mt-4">
+                <div class="col-md-1 align-items-center">PR Title</div>
+                <div class="col-md-11">
+                    <input type="text" id="prTitle" class="form-control" v-model="prTitle" placeholder="Enter PR Title">
+                </div>
+            </div>
+            <div class="row mt-4">
+                <div class="col-md-8">
+                    <div class="form-group">
+                        <input type="text" id="prBranchName" class="form-control" v-model="prBranchName" @keypress.enter="previewPR" placeholder="Enter branch name">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-primary" @click="previewPR">Preview PR</button>
+                    <button class="btn btn-success" v-if="hasBitbucketCredentials" @click="createPR">Create PR</button>
+                </div>
+            </div>
+        </div>
+
+        <hr class="solid">
+
+        <div v-if="!hasBitbucketCredentials">
+            Do you wanna use more features? <button name="credentials"  class="btn btn-link m-0 p-0 ml-2" @click="showCredentialsModal">Enter Bitbucket Credentials</button>
+        </div>
+        
+    
+        <!-- Modal -->
+        <div class="modal" id="credentialsModal" v-show="showModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Bitbucket Credentials</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="bitbucketUsername">Username:</label>
+                            <input type="text" class="form-control" id="bitbucketUsername" v-model="bitbucketUsername">
+                        </div>
+                        <div class="form-group">
+                            <label for="bitbucketPassword">Password:</label>
+                            <input type="password" class="form-control" id="bitbucketPassword" v-model="bitbucketPassword">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" @click="saveCredentials">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    
+
     <script>
         // Your Google Sheets API key
         const apiKey = 'AIzaSyB91grYYNrZXWlRVTXyM7fLRsxcpnNkvWo';
@@ -13,92 +158,226 @@
         const sheetId = '1YnjgxCUXEFJF76zlFuVa1PVQlpAXuPsVWlL4reVpdvE';
         // The range of data you want to fetch
         const range = 'Sheet1!A1:F20';
+    
+        new Vue({
+            el: '#app',
+            data: {
+                services: [],
+                environments: [],
+                selectedService: null,
+                selectedEnvironment: null,
+                destination: '',
+                branchName: '',
+                prBranchName: '',
+                hasBitbucketCredentials: false,
+                bitbucketUsername: '',
+                bitbucketPassword: '',
+                showModal: false,
+                prTitle: '',
+                newBranchCreated: false,
+                newBranchUrl: '',
+                loading: false
+            },
+            computed: {
+                showCreateBranch() {
+                    return this.hasBitbucketCredentials && this.destination !== '';
+                },
+                showCreatePR() {
+                    return this.destination;
+                }
+            },
+            created() {
+                this.loadSheetData();
+                this.loadCredentialsFromStorage();
+            },
+            methods: {
+                loadSheetData() {
+                    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            this.populateDropdowns(data.values);
+                        })
+                        .catch(error => console.error('Error fetching data:', error));
+                },
+                initializeSelect2() {
+                    $(this.$refs.serviceSelect).select2({
+                        placeholder: "Select a service",
+                        selectionCssClass: "select-box"
+                    }).on('change', () => {
+                        this.selectedService = $(this.$refs.serviceSelect).val();
+                        this.showDestination();
+                    });
 
-        function loadSheetData() {
-            fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`)
-                .then(response => response.json())
-                .then(data => {
-                    populateDropdowns(data.values);
-                })
-                .catch(error => console.error('Error fetching data:', error));
-        }
+                    $(this.$refs.environmentSelect).select2({
+                        placeholder: "Select an environment",
+                        selectionCssClass: "select-box"
+                    }).on('change', () => {
+                        this.selectedEnvironment = $(this.$refs.environmentSelect).val();
+                        this.showDestination();
+                    });
 
-        function populateDropdowns(data) {
-            const servicesDropdown = document.getElementById('service');
-            const environmentsDropdown = document.getElementById('environment');
-            
-            // Clear existing options
-            servicesDropdown.innerHTML = '';
-            environmentsDropdown.innerHTML = '';
-
-            // Populate services dropdown
-            const services = data.slice(1).map(row => row[0]);
-            services.forEach(service => {
-                const option = document.createElement('option');
-                option.value = service;
-                option.textContent = service;
-                servicesDropdown.appendChild(option);
-            });
-
-            // Populate environments dropdown
-            const environments = data[0].slice(1);
-            environments.forEach(environment => {
-                const option = document.createElement('option');
-                option.value = environment;
-                option.textContent = environment;
-                environmentsDropdown.appendChild(option);
-            });
-        }
-
-        function generateURL() {
-            const service = document.getElementById('service').value;
-            const environment = document.getElementById('environment').value;
-            const branch = document.getElementById('branch').value;
-            
-            fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`)
-                .then(response => response.json())
-                .then(data => {
-                    const row = data.values.find(row => row[0] === service);
-                    const envIndex = data.values[0].indexOf(environment);
-                    const destination = row[envIndex];
-                    
-                    if (destination) {
-                        const url = `https://bitbucket.org/vymo/${service}/pull-requests/new?source=${branch}&dest=${destination}`;
-                        const output = document.getElementById('output');
-                        output.innerHTML = `<a href="${url}" target="_blank">${url}</a>`;
-                    } else {
-                        document.getElementById('output').innerText = 'No destination value found for the selected service and environment.';
+                    // Set the initial selected values for both dropdowns
+                    if (this.services.length > 0) {
+                        $(this.$refs.serviceSelect).val(this.selectedService).trigger('change');
                     }
-                })
-                .catch(error => console.error('Error generating URL:', error));
-        }
 
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') {
-                generateURL();
+                    if (this.environments.length > 0) {
+                        $(this.$refs.environmentSelect).val(this.selectedEnvironment).trigger('change');
+                    }
+                },
+                populateDropdowns(data) {
+                    this.services = data.slice(1).map(row => row[0]);
+                    this.environments = data[0].slice(1);
+                    
+                    // Set selectedService to the first item in services array
+                    if (this.services.length > 0) {
+                        this.selectedService = this.services[0];
+                    }
+
+                    // Set selectedEnvironment to the first item in environments array
+                    if (this.environments.length > 0) {
+                        this.selectedEnvironment = this.environments[0];
+                    }
+
+                    // Reinitialize Select2 after populating dropdowns
+                    this.$nextTick(() => {
+                        this.initializeSelect2();
+                    });
+                },
+                showDestination() {
+                    if (this.selectedService && this.selectedEnvironment) {
+                        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                const row = data.values.find(row => row[0] === this.selectedService);
+                                const envIndex = data.values[0].indexOf(this.selectedEnvironment);
+                                this.destination = row ? row[envIndex] : null;
+                            })
+                            .catch(error => console.error('Error fetching data:', error));
+                    } else {
+                        this.destination = '';
+                    }
+                },
+                copyValue(value) {
+                    const el = document.createElement('textarea');
+                    el.value = value;
+                    document.body.appendChild(el);
+                    el.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(el);
+                },
+                copyDestination() {
+                    const el = document.createElement('textarea');
+                    el.value = this.destination;
+                    document.body.appendChild(el);
+                    el.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(el);
+                },
+                createBranch() {
+                    this.loading = true
+                    console.log('Creating branch with source:', this.destination, 'and target:', this.branchName);
+                    // Call Bitbucket API to create a branch
+                    fetch(`https://api.bitbucket.org/2.0/repositories/vymo/${this.selectedService}/refs/branches`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Basic ' + btoa(this.bitbucketUsername + ':' + this.bitbucketPassword),
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            "name" : this.branchName,
+                            "target" : {
+                                "hash" : this.destination
+                            }
+                        })
+                    }).then(response => response.json())
+                    .then((data) => {
+                        this.loading = false
+                        if(data.error) {
+                            this.branchName = ''
+                            alert(data.error.message)
+                        } else {
+                            console.log('Branch created:', data)
+                            const url = data.links.html.href;
+                            this.newBranchUrl = url
+                            console.log('Branch URL', url)
+                            this.newBranchCreated = true
+                        }
+                    })
+                    .catch((error) => {
+                        this.loading = false
+                        console.error('Error creating PR:', error)
+                    });
+                },
+                previewPR() {
+                    // Generate PR URL and open in new tab
+                    const url = `https://bitbucket.org/vymo/${this.selectedService}/pull-requests/new?source=${this.prBranchName}&dest=${this.destination}`;
+                    window.open(url, '_blank');
+                },
+                createPR() {
+                    // Call Bitbucket API to create a PR
+                    console.log('Creating PR with source:', this.prBranchName, 'and dest:', this.destination);
+                    // Example implementation:
+                    fetch('https://bitbucket.org/api/2.0/repositories/vymo/lms/pullrequests', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Basic ' + btoa(this.bitbucketUsername + ':' + this.bitbucketPassword),
+                            'Content-Type': 'application/json'
+                        },
+                        redirect: "follow",
+                        body: JSON.stringify({
+                            "title": this.prTitle,
+                            "source": {
+                                "branch": {
+                                    "name": this.prBranchName
+                                },
+                                "repository": {
+                                    "`full_name": "vymo/"+this.selectedService
+                                }
+                            },
+                            "destination": {
+                                "branch": {
+                                    "name": this.destination
+                                }
+                            },
+                            "close_source_branch": false
+                        })
+                    }).then(response => response.json())
+                    .then((data) => {
+                        this.prBranchName = ''
+                        this.prTitle = ''
+                        if(data.error) {
+                            alert(data.error.message)
+                        } else {
+                            console.log('PR created:', data)
+                            const url = data.links.html.href;
+                            window.open(url, '_blank');
+                        }
+                    })
+                    .catch(error => console.error('Error creating PR:', error));
+                },
+                showCredentialsModal() {
+                    $('#credentialsModal').modal('show');
+                },
+                saveCredentials() {
+                    // Save Bitbucket credentials to localStorage
+                    localStorage.setItem('bitbucketUsername', this.bitbucketUsername);
+                    localStorage.setItem('bitbucketPassword', this.bitbucketPassword);
+                    this.hasBitbucketCredentials = true;
+                    $('#credentialsModal').modal('hide'); // Hide modal after saving credentials
+                },
+                loadCredentialsFromStorage() {
+                    // Load Bitbucket credentials from localStorage if present
+                    const username = localStorage.getItem('bitbucketUsername');
+                    const password = localStorage.getItem('bitbucketPassword');
+                    if (username && password) {
+                        this.hasBitbucketCredentials = true;
+                        this.bitbucketUsername = username;
+                        this.bitbucketPassword = password;
+                    }
+                }
             }
-        }
-
-        // Load the Google Sheet data when the page loads
-        window.onload = loadSheetData;
+        });
     </script>
-</head>
-<body>
-    <h1>URL Generator</h1>
-    
-    <label for="service">Select Service:</label>
-    <select id="service"></select>
-    
-    <label for="environment">Select Environment:</label>
-    <select id="environment"></select>
-    
-    <label for="branch">Enter Branch Name:</label>
-    <input type="text" id="branch" onkeypress="handleKeyPress(event)" placeholder="Enter your branch name">
-    
-    <button onclick="generateURL()">Submit</button>
-    <div>Generated URL: 
-        <p id="output"></p>
-    </div>
-    
 </body>
-</html>
+</html>    
