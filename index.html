@@ -31,7 +31,7 @@
             <p class="h1">Branch Navigator</p>
         </div> 
         <hr class="solid">
-        <!-- First Part: Select Service, Select Environment, Destination Value -->
+        <!-- First Part: Select Service, Select Environment, Destination Branch -->
         <div class="row mt-4">
             <div class="col-md-4">
                 <div class="form-group">
@@ -51,7 +51,7 @@
             </div>
             <div class="col-md-4">
                 <div class="form-group">
-                    <label for="destination">Destination Value:</label>
+                    <label for="destination">Destination Branch:</label>
                     <div class="input-group">
                         <input type="text" id="destination" class="form-control" v-model="destination" readonly>
                         <div class="input-group-append">
@@ -72,7 +72,7 @@
             <div class="row mt-4">
                 <div class="col-md-8">
                     <div class="form-group">
-                        <input type="text" id="branchName" class="form-control" v-model="branchName" @keypress.enter="createBranch" placeholder="Enter branch name">
+                        <input type="text" id="branchName" class="form-control" v-model="branchName" @keypress.enter="createBranch" placeholder="Enter new branch name">
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -103,7 +103,7 @@
             <div class="row mt-4">
                 <div class="col-md-8">
                     <div class="form-group">
-                        <input type="text" id="prBranchName" class="form-control" v-model="prBranchName" @keypress.enter="previewPR" placeholder="Enter branch name">
+                        <input type="text" id="prBranchName" class="form-control" v-model="prBranchName" @keypress.enter="previewPR" placeholder="Enter your branch name">
                     </div>
                 </div>
                 <div class="col-md-4">
