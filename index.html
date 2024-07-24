@@ -84,7 +84,7 @@
             </div>
             <div v-if="newBranchCreated">
                 <div class="mt-2">Branch URL: <a :href=newBranchUrl>{{newBranchUrl}}</a></div>
-                <div class="mt-1"><code>git fetch origin {{branchName}}</code><button type="button" class="btn btn-link"><i class="fa fa-copy" @click="copyValue(`git fetch ${branchName}`)"></i></button></div>
+                <div class="mt-1"><code>git fetch origin {{branchName}}</code><button type="button" class="btn btn-link"><i class="fa fa-copy" @click="copyValue(`git fetch origin ${branchName}`)"></i></button></div>
                 <div class="mt-1"><code>git checkout {{branchName}}</code><button type="button" class="btn btn-link"><i class="fa fa-copy" @click="copyValue(`git checkout ${branchName}`)"></i></button></div>
             </div>
             <hr class="solid">
