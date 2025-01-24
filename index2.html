@@ -194,44 +194,58 @@
 
     <script>
         const clientId = "208037456944-v8rcqeeopfl9ilbgu9u1jc7e6vlpot91.apps.googleusercontent.com"
-        // Your Google Sheets API key
         const apiKey = 'AIzaSyB91grYYNrZXWlRVTXyM7fLRsxcpnNkvWo';
-        // The ID of your Google Sheet
         const sheetId = '1YnjgxCUXEFJF76zlFuVa1PVQlpAXuPsVWlL4reVpdvE';
-        // The range of data you want to fetch
         const range = 'Sheet1!A1:J40';
 
         const DISCOVERY_DOCS = ["https://sheets.googleapis.com/$discovery/rest?version=v4"];
-        const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
-    
+        const SCOPES = "https://www.googleapis.com/auth/spreadsheets.readonly";
+
         function loadGapiClient() {
-            gapi.load("client:auth2", () => {
-                gapi.client.init({
+            gapi.load("client:auth2", initClient);
+        }
+
+        function initClient() {
+            gapi.client.init({
                 apiKey: apiKey,
                 clientId: clientId,
                 discoveryDocs: DISCOVERY_DOCS,
-                scope: SCOPES,
-                }).then(() => {
-                const authorizeButton = document.getElementById('authorize-button');
-                // const writeButton = document.getElementById('write-button');
-
-                // // Check if user is already signed in
-                // if (gapi.auth2.getAuthInstance().isSignedIn.get()) {
-                //     writeButton.style.display = 'block';
-                // }
-
-                // Authorize button click event
-                authorizeButton.onclick = () => {
-                    gapi.auth2.getAuthInstance().signIn().then(() => {
-                    writeButton.style.display = 'block';
-                    });
-                };
-
-                });
+                scope: SCOPES
+            }).then(() => {
+                // Listen for sign-in state changes
+                gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+                
+                // Handle the initial sign-in state
+                updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+                
+                document.getElementById('authorize-button').onclick = handleAuthClick;
+            }).catch((error) => {
+                console.error('Error initializing client:', error);
             });
         }
-        
+
+        function updateSigninStatus(isSignedIn) {
+            const authorizeButton = document.getElementById('authorize-button');
+            
+            if (isSignedIn) {
+                authorizeButton.style.display = 'none';
+                // Trigger data load or other authorized actions
+                app.loadSheetData();
+            } else {
+                authorizeButton.style.display = 'block';
+            }
+        }
+
+        function handleAuthClick() {
+            if (gapi.auth2.getAuthInstance().isSignedIn.get()) {
+                gapi.auth2.getAuthInstance().signOut();
+            } else {
+                gapi.auth2.getAuthInstance().signIn();
+            }
+        }
+
         window.onload = loadGapiClient;
+
 
         new Vue({
             el: '#app',
