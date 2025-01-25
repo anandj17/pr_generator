@@ -489,7 +489,7 @@
                         },
                     };
 
-                    // console.log(tagData)
+                    console.log(tagData)
 
                     // try {
                     //     const response = await fetch(tagsApiUrl, {
@@ -516,6 +516,7 @@
                 // Main function to get commits and create a tag
                 tagLatestCommit: async function(service, branchName) {
                     const lastCommitHash = await this.fetchCommits(service, branchName);
+                    console.log("inin",lastCommitHash)
                     if (lastCommitHash) {
                         await this.createTag(service, lastCommitHash);
                     } else {
@@ -524,22 +525,30 @@
                 },
 
                 createReleaseTags: async function() {
-                    this.loading = true;
-                    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            console.log(data)
-                            this.selectedServices.forEach(async (service) => {
-                                const row = data.values.find(row => row[0] === service);
-                                const envIndex = data.values[0].indexOf('AJE-UAT');
-                                const branchName = row ? row[envIndex] : null;
-                                console.log(branchName)
-                                await this.tagLatestCommit(service, branchName)
-                            });
-                            this.loading = false
-                        })
-                        .catch(error => console.error('Error fetching data:', error));
-                    $('#createReleaseBranchModal').modal('hide');
+                    try {
+                        this.loading = true;
+
+                        // Fetch data from the API
+                        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`);
+                        const data = await response.json();
+                        console.log(data);
+
+                        // Iterate through selected services synchronously
+                        for (const service of this.selectedServices) {
+                            const row = data.values.find(row => row[0] === service);
+                            const envIndex = data.values[0].indexOf('AJE-UAT');
+                            const branchName = row ? row[envIndex] : null;
+                            console.log(branchName);
+
+                            // Call the tagLatestCommit function synchronously
+                            await this.tagLatestCommit(service, branchName);
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                    } finally {
+                        this.loading = false;
+                        $('#createReleaseBranchModal').modal('hide');
+                    }
                 },
 
                 getCurrentMonthMMMYY() {
@@ -552,27 +561,35 @@
                 },
                 createReleaseBranches: async function() {
                     this.loading = true;
-                    const branch_name = 'aje-release-'+this.getCurrentMonthMMMYY();
-                    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log(data)
-                        this.selectedServices.forEach(async (service) => {
+                    const branch_name = 'aje-release-' + this.getCurrentMonthMMMYY();
+
+                    try {
+                        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`);
+                        const data = await response.json();
+
+                        for (const service of this.selectedServices) {
                             const rowIndex = data.values.findIndex(row => row[0] === service);
-                            const cellNumber = 'Sheet1!D'+(rowIndex+1)
+                            const cellNumber = 'Sheet1!D' + (rowIndex + 1);
                             const row = data.values.find(row => row[0] === service);
                             const envIndex = data.values[0].indexOf('RELEASE MASTER');
                             const branch_cut = row ? row[envIndex] : null;
-                            const branchUrl = await this._createBranch(service, branch_name, branch_cut)
-                            if(branchUrl || true) {
-                                await this.updateSheet(cellNumber, branch_name)
+
+                            const branchUrl = await this._createBranch(service, branch_name, branch_cut);
+
+                            if (branchUrl || true) {
+                                await this.updateSheet(cellNumber, branch_name);
                             }
-                        });
-                        this.loading = false
-                    })
-                    .catch(error => console.error('Error fetching data:', error));
+                        }
+
+                        this.loading = false;
+                    } catch (error) {
+                        console.error('Error fetching data:', error);
+                        this.loading = false;
+                    }
+
                     $('#createReleaseBranchModal').modal('hide');
                 },
+
                 previewPR() {
                     // Generate PR URL and open in new tab
                     const url = `https://bitbucket.org/vymo/${this.selectedService}/pull-requests/new?source=${this.prBranchName}&dest=${this.destination}`;
