@@ -29,11 +29,17 @@
     <div id="app" class="container mt-5">
         <div class="d-flex flex-column justify-content-center">
             <p class="h1">Release Management</p>
-            <div class="m-2 d-flex align-items-center" v-if="googleAccessToken">
-                To create release branches, tags and back merge PRs 
-                <button name="credentials"  class="btn btn-link m-0 p-0 ml-2" @click="createReleaseBranchModal">click here</button>
+            <div v-if="hasBitbucketCredentials">
+                <div class="m-2 d-flex align-items-center" v-if="googleAccessToken">
+                    To create release branches, tags and back merge PRs 
+                    <button name="credentials"  class="btn btn-link m-0 p-0 ml-2" @click="createReleaseBranchModal">click here</button>
+                </div>
+                <button v-else class="btn btn-primary" @click="authenticate">Authenticate</button>
             </div>
-            <button v-else class="btn btn-primary" @click="authenticate">Authenticate</button>
+            <div v-else>
+                <button name="credentials"  class="btn btn-link m-0 p-0 ml-2" @click="showCredentialsModal">Enter Bitbucket Credentials</button>
+            </div>
+            
         </div> 
         <hr class="solid">
         <div class="d-flex flex-column justify-content-center">
