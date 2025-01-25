@@ -197,66 +197,39 @@
         const range = 'Sheet1!A1:J40';
 
         // Replace with your OAuth2 Client ID and Google Sheet ID
-const CLIENT_ID = '5317076137-0eqih9p0tt6q48abuuaefnols2j6vilm.apps.googleusercontent.com';
-const SHEET_ID = '1YnjgxCUXEFJF76zlFuVa1PVQlpAXuPsVWlL4reVpdvE';
-const RANGE = 'Sheet1!A1:J40'; // The specific cell to update
+        const CLIENT_ID = '5317076137-0eqih9p0tt6q48abuuaefnols2j6vilm.apps.googleusercontent.com';
+        const SHEET_ID = '1YnjgxCUXEFJF76zlFuVa1PVQlpAXuPsVWlL4reVpdvE';
+        const RANGE = 'Sheet1!A1:J40'; // The specific cell to update
 
-let accessToken = '';
+        let accessToken = '';
 
-// Function to handle OAuth2 authentication
-const authenticate = () => {
-  const SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
-  const authUrl = `https://accounts.google.com/o/oauth2/auth?response_type=token&client_id=${CLIENT_ID}&redirect_uri=https://anandj17.github.io/pr_generator/index2.html&scope=${SCOPE}`;
+        // Function to handle OAuth2 authentication
+        const authenticate = () => {
+        const SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
+        const authUrl = `https://accounts.google.com/o/oauth2/auth?response_type=token&client_id=${CLIENT_ID}&redirect_uri=https://anandj17.github.io/pr_generator/index2.html&scope=${SCOPE}`;
 
-  // Redirect the user to Google's OAuth2 consent screen
-  window.location.href = authUrl;
-};
+        // Redirect the user to Google's OAuth2 consent screen
+        window.location.href = authUrl;
+        };
 
-// Function to update the Google Sheet
-const updateCell = async () => {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?valueInputOption=RAW`;
+        // Check for access token in the URL after authentication
+        const checkForAccessToken = () => {
+        const hash = window.location.hash;
+        if (hash) {
+            const params = new URLSearchParams(hash.substring(1));
+            accessToken = params.get('access_token');
 
-  const body = {
-    range: RANGE,
-    majorDimension: 'ROWS',
-    values: [['change']], // The value to update
-  };
+            if (accessToken) {
+            console.log('Access token obtained:', accessToken);
 
-  const response = await fetch(url, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`, // Pass the access token in the Authorization header
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
+            }
+        } else {
+            authenticate();
+        }
+        };
 
-  if (response.ok) {
-    console.log('Cell B10 updated successfully!');
-  } else {
-    const errorData = await response.json();
-    console.error('Error updating cell:', errorData);
-  }
-};
-
-// Check for access token in the URL after authentication
-const checkForAccessToken = () => {
-  const hash = window.location.hash;
-  if (hash) {
-    const params = new URLSearchParams(hash.substring(1));
-    accessToken = params.get('access_token');
-
-    if (accessToken) {
-      console.log('Access token obtained:', accessToken);
-
-    }
-  } else {
-    authenticate();
-  }
-};
-
-// Run the function to check for an access token or start the authentication process
-checkForAccessToken();
+        // Run the function to check for an access token or start the authentication process
+        checkForAccessToken();
     
         new Vue({
             el: '#app',
@@ -418,28 +391,30 @@ checkForAccessToken();
                     });
                 },
                 updateSheet: async (cellNumber, branch_name) => {
-                    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${cellNumber}?valueInputOption=RAW&key=${apiKey}`;
+                    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${cellNumber}?valueInputOption=RAW`;
 
                     const body = {
-                        range: cellNumber,
+                        range: RANGE,
                         majorDimension: 'ROWS',
-                        values: [[branch_name]], // Your new data
+                        values: [[branch_name]], // The value to update
                     };
 
                     const response = await fetch(url, {
-                        method: 'PUT', // HTTP method for updating
+                        method: 'PUT',
                         headers: {
+                        'Authorization': `Bearer ${accessToken}`, // Pass the access token in the Authorization header
                         'Content-Type': 'application/json',
                         },
                         body: JSON.stringify(body),
                     });
 
                     if (response.ok) {
-                        console.log('Sheet updated successfully!');
+                        console.log('Cell B10 updated successfully!');
                     } else {
                         const errorData = await response.json();
-                        console.error('Error updating sheet:', errorData);
+                        console.error('Error updating cell:', errorData);
                     }
+                    
                 },
                 _createBranch: async function (service, branch_name, branch_cut) {
                     console.log('Creating branch for service: ',service,' with source:', branch_cut, 'and target:', branch_name);
