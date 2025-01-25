@@ -491,26 +491,26 @@
 
                     console.log(tagData)
 
-                    // try {
-                    //     const response = await fetch(tagsApiUrl, {
-                    //         method: "POST",
-                    //         headers: {
-                    //             "Content-Type": "application/json",
-                    //             Authorization: `Bearer ${authToken}`,
-                    //         },
-                    //         body: JSON.stringify(tagData),
-                    //     });
+                    try {
+                        const response = await fetch(tagsApiUrl, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${authToken}`,
+                            },
+                            body: JSON.stringify(tagData),
+                        });
 
-                    //     if (response.ok) {
-                    //         const result = await response.json();
-                    //         console.log("Tag created successfully:", result);
-                    //     } else {
-                    //         const error = await response.json();
-                    //         console.error("Error creating tag:", error);
-                    //     }
-                    // } catch (error) {
-                    //     console.error("Network or other error:", error);
-                    // }
+                        if (response.ok) {
+                            const result = await response.json();
+                            console.log("Tag created successfully:", result);
+                        } else {
+                            const error = await response.json();
+                            console.error("Error creating tag:", error);
+                        }
+                    } catch (error) {
+                        console.error("Network or other error:", error);
+                    }
                 },
 
                 // Main function to get commits and create a tag
