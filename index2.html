@@ -206,7 +206,7 @@ let accessToken = '';
 // Function to handle OAuth2 authentication
 const authenticate = () => {
   const SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
-  const authUrl = `https://accounts.google.com/o/oauth2/auth?response_type=token&client_id=${CLIENT_ID}&redirect_uri=${window.location.origin}&scope=${SCOPE}`;
+  const authUrl = `https://accounts.google.com/o/oauth2/auth?response_type=token&client_id=${CLIENT_ID}&redirect_uri=https://anandj17.github.io/pr_generator/index2.html&scope=${SCOPE}`;
 
   // Redirect the user to Google's OAuth2 consent screen
   window.location.href = authUrl;
