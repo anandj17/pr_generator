@@ -394,7 +394,7 @@
                     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${cellNumber}?valueInputOption=RAW`;
 
                     const body = {
-                        range: RANGE,
+                        range: cellNumber,
                         majorDimension: 'ROWS',
                         values: [[branch_name]], // The value to update
                     };
@@ -413,8 +413,7 @@
                     } else {
                         const errorData = await response.json();
                         console.error('Error updating cell:', errorData);
-                    }
-                    
+                    }  
                 },
                 _createBranch: async function (service, branch_name, branch_cut) {
                     console.log('Creating branch for service: ',service,' with source:', branch_cut, 'and target:', branch_name);
