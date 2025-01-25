@@ -28,6 +28,15 @@
 <body>
     <div id="app" class="container mt-5">
         <div class="d-flex flex-column justify-content-center">
+            <p class="h1">Release Management</p>
+            <div class="m-2 d-flex align-items-center" v-if="googleAccessToken">
+                To create release branches, tags and back merge PRs 
+                <button name="credentials"  class="btn btn-link m-0 p-0 ml-2" @click="createReleaseBranchModal">click here</button>
+            </div>
+            <button v-else class="btn btn-primary" @click="authenticate">Authenticate</button>
+        </div> 
+        <hr class="solid">
+        <div class="d-flex flex-column justify-content-center">
             <p class="h1">Branch Navigator</p>
             <p class="text-muted">Source: <a href="https://docs.google.com/spreadsheets/d/1YnjgxCUXEFJF76zlFuVa1PVQlpAXuPsVWlL4reVpdvE" target="_blank">Google Sheet</a></p>
         </div> 
@@ -150,6 +159,78 @@
                 </div>
             </div>
         </div>
+
+        <!-- Modal -->
+        <div class="modal" id="createReleaseBranchModal" v-show="showModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Release Branches</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-check" v-for="service in services" :key="service">
+                            <input
+                                class="form-check-input"
+                                type="checkbox"
+                                :id="service"
+                                :value="service"
+                                v-model="selectedServices"
+                            >
+                            <label class="form-check-label" :for="service">
+                                {{ service }}
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" @click="createReleaseBranches">Create Branches</button>
+                        <button type="button" class="btn btn-primary" @click="createReleaseTags">Create Tags</button>
+                        <button type="button" class="btn btn-primary" @click="createBackmergePrs">Create Backmerge PR</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div class="modal" id="showTagsModal" v-show="showModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Tags</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-for="(tag, service) in tagsCreated" :key="service">
+                            {{service}} : <a class="text-break" :href="tag" target="_blank">{{tag}}</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div class="modal" id="showPrsModal" v-show="showModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Backmerge PRs</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-for="(pr, service) in prsCreated" :key="service">
+                            {{service}} : <a class="text-break" :href="pr" target="_blank">{{pr}}</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
 
@@ -162,6 +243,26 @@
         const sheetId = '1YnjgxCUXEFJF76zlFuVa1PVQlpAXuPsVWlL4reVpdvE';
         // The range of data you want to fetch
         const range = 'Sheet1!A1:J40';
+
+        // Replace with your OAuth2 Client ID and Google Sheet ID
+        const clientId = '5317076137-0eqih9p0tt6q48abuuaefnols2j6vilm.apps.googleusercontent.com';
+
+        let accessToken = '';
+
+        // Check for access token in the URL after authentication
+        const checkForAccessToken = () => {
+            const hash = window.location.hash;
+            if (hash) {
+                const params = new URLSearchParams(hash.substring(1));
+                accessToken = params.get('access_token');
+                if (accessToken) {
+                console.log('Access token obtained:', accessToken);
+                }
+            }
+        };
+
+        // Run the function to check for an access token or start the authentication process
+        checkForAccessToken();
     
         new Vue({
             el: '#app',
@@ -180,7 +281,10 @@
                 prTitle: '',
                 newBranchCreated: false,
                 newBranchUrl: '',
-                loading: false
+                loading: false,
+                selectedServices: [],
+                tagsCreated: {},
+                prsCreated: {}
             },
             computed: {
                 showCreateBranch() {
@@ -188,6 +292,9 @@
                 },
                 showCreatePR() {
                     return this.destination;
+                },
+                googleAccessToken() {
+                    return accessToken
                 }
             },
             created() {
@@ -195,6 +302,13 @@
                 this.loadCredentialsFromStorage();
             },
             methods: {
+                authenticate() {
+                    const SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
+                    const authUrl = `https://accounts.google.com/o/oauth2/auth?response_type=token&client_id=${clientId}&redirect_uri=https://anandj17.github.io/pr_generator/index.html&scope=${SCOPE}`;
+
+                    // Redirect the user to Google's OAuth2 consent screen
+                    window.location.href = authUrl;
+                },
                 loadSheetData() {
                     fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`)
                         .then(response => response.json())
@@ -239,6 +353,7 @@
                 },
                 populateDropdowns(data) {
                     this.services = data.slice(1).map(row => row[0]);
+                    this.services = this.services.sort()
                     this.environments = data[0].slice(1);
                     
                     // Set selectedService to the first item in services array
@@ -321,6 +436,215 @@
                         console.error('Error creating PR:', error)
                     });
                 },
+                updateSheet: async (cellNumber, branch_name) => {
+                    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${cellNumber}?valueInputOption=RAW`;
+
+                    const body = {
+                        range: cellNumber,
+                        majorDimension: 'ROWS',
+                        values: [[branch_name]], // The value to update
+                    };
+
+                    const response = await fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                        'Authorization': `Bearer ${accessToken}`, // Pass the access token in the Authorization header
+                        'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(body),
+                    });
+
+                    if (response.ok) {
+                        console.log('Cell B10 updated successfully!');
+                    } else {
+                        const errorData = await response.json();
+                        console.error('Error updating cell:', errorData);
+                    }  
+                },
+                _createBranch: async function (service, branch_name, branch_cut) {
+                    console.log('Creating branch for service: ',service,' with source:', branch_cut, 'and target:', branch_name);
+                    return await fetch(`https://api.bitbucket.org/2.0/repositories/vymo/${service}/refs/branches`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Basic ' + btoa(this.bitbucketUsername + ':' + this.bitbucketPassword),
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            "name" : branch_name,
+                            "target" : {
+                                "hash" : branch_cut
+                            }
+                        })
+                    }).then(response => response.json())
+                    .then((data) => {
+                        if(data.error) {
+                            alert(data.error.message)
+                        } else {
+                            console.log('Branch created:', data)
+                            const url = data.links.html.href;
+                            console.log('Branch URL', url)
+                            return url
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error creating PR:', error)
+                    });
+                },
+
+                
+
+                // Function to fetch all commits of a branch
+                fetchCommits: async function(service, branchName) {
+                    const commitsApiUrl = `https://api.bitbucket.org/2.0/repositories/vymo/${service}/commits/${branchName}`;
+
+                    try {
+                        const response = await fetch(commitsApiUrl, {
+                                                    method: "GET",
+                                                    headers: {
+                                                            'Authorization': 'Basic ' + btoa(this.bitbucketUsername + ':' + this.bitbucketPassword),
+                                                        },
+                                                    });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            // Get the last commit hash (latest commit)
+                            const lastCommitHash = data.values[0].hash; // Assuming the first commit is the latest
+                            console.log("Latest commit hash:", lastCommitHash);
+                            return lastCommitHash;
+                        } else {
+                            const error = await response.json();
+                            console.error("Error fetching commits:", error);
+                        }
+                    } catch (error) {
+                        console.error("Network or other error:", error);
+                    }
+                },
+
+                getCurrentMMddYY() {
+                    const date = new Date();
+                    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const year = date.getFullYear();
+                    return `${month}${day}-${year}`;
+                },
+
+                // Function to create a tag
+                createTag: async function(service, commitHash) {
+                    const tagsApiUrl = `https://api.bitbucket.org/2.0/repositories/vymo/${service}/refs/tags`;
+                    const tagData = {
+                        name: commitHash+'-'+this.getCurrentMMddYY()+'-aje-v1',
+                        target: {
+                            hash: commitHash,
+                        },
+                    };
+
+                    console.log(tagData)
+
+                    return "https://bitbucket.org/vymo/lms/commits/tag/de6c9fea95781fa7416119c2304e0cad25bef389-0125-2025-aje-v1";
+
+                    // try {
+                    //     const response = await fetch(tagsApiUrl, {
+                    //         method: "POST",
+                    //         headers: {
+                    //             "Content-Type": "application/json",
+                    //             'Authorization': 'Basic ' + btoa(this.bitbucketUsername + ':' + this.bitbucketPassword),
+                    //         },
+                    //         body: JSON.stringify(tagData),
+                    //     });
+
+                    //     if (response.ok) {
+                    //         const result = await response.json();
+                    //         console.log("Tag created successfully:", result);
+                    //         return result.links.html.href;
+                    //     } else {
+                    //         const error = await response.json();
+                    //         console.error("Error creating tag:", error);
+                    //     }
+                    // } catch (error) {
+                    //     console.error("Network or other error:", error);
+                    // }
+                },
+
+                // Main function to get commits and create a tag
+                tagLatestCommit: async function(service, branchName) {
+                    const lastCommitHash = await this.fetchCommits(service, branchName);
+                    if (lastCommitHash) {
+                        return await this.createTag(service, lastCommitHash);
+                    } else {
+                        console.error("No commit hash found. Tag creation skipped.");
+                    }
+                },
+
+                createReleaseTags: async function() {
+                    try {
+                        this.tagsCreated = {}
+                        this.loading = true;
+
+                        // Fetch data from the API
+                        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`);
+                        const data = await response.json();
+                        console.log(data);
+
+                        // Iterate through selected services synchronously
+                        for (const service of this.selectedServices) {
+                            const row = data.values.find(row => row[0] === service);
+                            const envIndex = data.values[0].indexOf('AJE-UAT');
+                            const branchName = row ? row[envIndex] : null;
+                            console.log(branchName);
+
+                            // Call the tagLatestCommit function synchronously
+                            let tagUrl = await this.tagLatestCommit(service, branchName);
+                            this.tagsCreated[service] = tagUrl
+                            console.log(this.tagsCreated)
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                    } finally {
+                        this.loading = false;
+                        $('#createReleaseBranchModal').modal('hide');
+                        $('#showTagsModal').modal('show');
+                    }
+                },
+
+                getCurrentMonthMMMYY() {
+                    const today = new Date();
+                    const options = { month: 'short' }; // Get the abbreviated month (e.g., "Jan", "Feb")
+                    const month = today.toLocaleString('en-US', options); // Format the month as "Jan", "Feb", etc.
+                    const year = today.getFullYear().toString().slice(-2); // Get the last two digits of the year
+
+                    return `${month.toLocaleLowerCase()}${year}`;
+                },
+                createReleaseBranches: async function() {
+                    this.loading = true;
+                    const branch_name = 'aje-release-' + this.getCurrentMonthMMMYY();
+
+                    try {
+                        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`);
+                        const data = await response.json();
+
+                        for (const service of this.selectedServices) {
+                            const rowIndex = data.values.findIndex(row => row[0] === service);
+                            const cellNumber = 'Sheet1!D' + (rowIndex + 1);
+                            const row = data.values.find(row => row[0] === service);
+                            const envIndex = data.values[0].indexOf('RELEASE MASTER');
+                            const branch_cut = row ? row[envIndex] : null;
+
+                            const branchUrl = await this._createBranch(service, branch_name, branch_cut);
+
+                            if (branchUrl || true) {
+                                await this.updateSheet(cellNumber, branch_name);
+                            }
+                        }
+
+                        this.loading = false;
+                    } catch (error) {
+                        console.error('Error fetching data:', error);
+                        this.loading = false;
+                    }
+
+                    $('#createReleaseBranchModal').modal('hide');
+                },
+
                 previewPR() {
                     // Generate PR URL and open in new tab
                     const url = `https://bitbucket.org/vymo/${this.selectedService}/pull-requests/new?source=${this.prBranchName}&dest=${this.destination}`;
@@ -367,6 +691,82 @@
                         }
                     })
                     .catch(error => console.error('Error creating PR:', error));
+                },
+                _createPR: async function(service, source, target) {
+                    // Call Bitbucket API to create a PR
+                    console.log('Creating PR with source:', source, 'and dest:', target);
+                    // Example implementation:
+                    const response = await fetch('https://bitbucket.org/api/2.0/repositories/vymo/lms/pullrequests', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Basic ' + btoa(this.bitbucketUsername + ':' + this.bitbucketPassword),
+                            'Content-Type': 'application/json'
+                        },
+                        redirect: "follow",
+                        body: JSON.stringify({
+                            "title": 'Back merge PR - '+service,
+                            "source": {
+                                "branch": {
+                                    "name": source
+                                },
+                                "repository": {
+                                    "`full_name": "vymo/"+service
+                                }
+                            },
+                            "destination": {
+                                "branch": {
+                                    "name": target
+                                }
+                            },
+                            "close_source_branch": false
+                        })
+                    })
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        console.log("PR created successfully:", result);
+                        return result.links.html.href;
+                    } else {
+                        const error = await response.json();
+                        console.error("Error creating pr:", error);
+                    }
+                },
+                createBackmergePrs: async function() {
+                    this.prsCreated = {}
+                    this.loading = true;
+                    const branch_name = 'aje-release-' + this.getCurrentMonthMMMYY();
+
+                    try {
+                        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`);
+                        const data = await response.json();
+
+                        for (const service of this.selectedServices) {
+                            const row = data.values.find(row => row[0] === service);
+                            const targetIndex = data.values[0].indexOf('RELEASE MASTER');
+                            const targetBranch = row ? row[targetIndex] : null;
+
+                            const sourceIndex = data.values[0].indexOf('AJE-UAT');
+                            const sourceBranch = row ? row[sourceIndex] : null;
+
+                            if(sourceBranch && targetBranch) {
+                                let prUrl = await this._createPR(service, sourceBranch, targetBranch)
+                                if(prUrl)
+                                    this.prsCreated[service] = prUrl
+                                else 
+                                    this.prsCreated[service] = "No Changes to merge"
+                            }
+                        }
+
+                        this.loading = false;
+                    } catch (error) {
+                        console.error('Error fetching data:', error);
+                        this.loading = false;
+                    }
+                    $('#createReleaseBranchModal').modal('hide');
+                    $('#showPrsModal').modal('show');
+                },
+                createReleaseBranchModal() {
+                    $('#createReleaseBranchModal').modal('show');
                 },
                 showCredentialsModal() {
                     $('#credentialsModal').modal('show');
