@@ -658,7 +658,7 @@
                     // Call Bitbucket API to create a PR
                     console.log('Creating PR with source:', this.prBranchName, 'and dest:', this.destination);
                     // Example implementation:
-                    fetch('https://bitbucket.org/api/2.0/repositories/vymo/lms/pullrequests', {
+                    fetch(`https://bitbucket.org/api/2.0/repositories/vymo/${service}/pullrequests`, {
                         method: 'POST',
                         headers: {
                             'Authorization': 'Basic ' + btoa(this.bitbucketUsername + ':' + this.bitbucketPassword),
@@ -700,7 +700,7 @@
                     // Call Bitbucket API to create a PR
                     console.log('Creating PR with source:', source, 'and dest:', target);
                     // Example implementation:
-                    const response = await fetch('https://bitbucket.org/api/2.0/repositories/vymo/lms/pullrequests', {
+                    const response = await fetch(`https://bitbucket.org/api/2.0/repositories/vymo/${service}/pullrequests`, {
                         method: 'POST',
                         headers: {
                             'Authorization': 'Basic ' + btoa(this.bitbucketUsername + ':' + this.bitbucketPassword),
