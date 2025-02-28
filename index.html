@@ -177,6 +177,12 @@
                         </button>
                     </div>
                     <div class="modal-body">
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                              <span class="input-group-text" id="inputGroup-sizing-default">Tag Version</span>
+                            </div>
+                            <input type="text" class="form-control" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-default" :v-model="tagVersion">
+                        </div>
                         <div class="form-check" v-for="service in services" :key="service">
                             <input
                                 class="form-check-input"
@@ -290,7 +296,8 @@
                 loading: false,
                 selectedServices: [],
                 tagsCreated: {},
-                prsCreated: {}
+                prsCreated: {},
+                tagVersion: v1
             },
             computed: {
                 showCreateBranch() {
@@ -538,7 +545,7 @@
                 createTag: async function(service, commitHash, cellNumber) {
                     const tagsApiUrl = `https://api.bitbucket.org/2.0/repositories/vymo/${service}/refs/tags`;
                     const tagData = {
-                        name: commitHash+'-'+this.getCurrentMMddYY()+'-aje-v1',
+                        name: commitHash+'-'+this.getCurrentMMddYY()+'-aje-'+this.tagVersion,
                         target: {
                             hash: commitHash,
                         },
