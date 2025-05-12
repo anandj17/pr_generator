@@ -546,7 +546,7 @@
                 createTag: async function(service, commitHash, cellNumber) {
                     const tagsApiUrl = `https://api.bitbucket.org/2.0/repositories/vymo/${service}/refs/tags`;
                     const tagData = {
-                        name: commitHash+'-'+this.getCurrentMMddYY()+'-aje-'+this.tagVersion,
+                        name: commitHash.slice(0, 7)+'-'+this.getCurrentMMddYY()+'-aje-'+this.tagVersion,
                         target: {
                             hash: commitHash,
                         },
