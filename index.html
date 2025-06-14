@@ -195,6 +195,12 @@
                                 {{ service }}
                             </label>
                         </div>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                              <span class="input-group-text" id="inputGroup-sizing-default">Release Branch</span>
+                            </div>
+                            <input type="text" class="form-control" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-default" v-model="userReleaseBranch">
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-primary" @click="createReleaseBranches">Create Branches</button>
@@ -298,7 +304,8 @@
                 selectedServices: [],
                 tagsCreated: {},
                 prsCreated: {},
-                tagVersion: "v1"
+                tagVersion: "v1",
+                userReleaseBranch: null
             },
             computed: {
                 showCreateBranch() {
@@ -598,8 +605,18 @@
                         const data = await response.json();
                         console.log(data);
 
+                        let services = []
+                        if(userReleaseBranch !== null && userReleaseBranch != "") {
+                            const envIndex = data.values[0].indexOf('AJE-UAT');
+                            const row = data.values.find(row => row[envIndex] === userReleaseBranch);
+                            
+                            services.push(row[0])
+                        } else {
+                            services = this.selectedServices
+                        }
+
                         // Iterate through selected services synchronously
-                        for (const service of this.selectedServices) {
+                        for (const service of services) {
                             const row = data.values.find(row => row[0] === service);
                             const envIndex = data.values[0].indexOf('AJE-UAT');
                             const branchName = row ? row[envIndex] : null;
