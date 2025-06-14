@@ -195,7 +195,7 @@
                                 {{ service }}
                             </label>
                         </div>
-                        <div class="input-group mb-3">
+                        <div class="input-group mt-3">
                             <div class="input-group-prepend">
                               <span class="input-group-text" id="inputGroup-sizing-default">Release Branch</span>
                             </div>
@@ -606,9 +606,9 @@
                         console.log(data);
 
                         let services = []
-                        if(userReleaseBranch !== null && userReleaseBranch != "") {
+                        if(this.userReleaseBranch !== null && this.userReleaseBranch != "") {
                             const envIndex = data.values[0].indexOf('AJE-UAT');
-                            const row = data.values.find(row => row[envIndex] === userReleaseBranch);
+                            const row = data.values.find(row => row[envIndex] === this.userReleaseBranch);
                             
                             services.push(row[0])
                         } else {
