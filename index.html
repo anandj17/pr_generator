@@ -608,7 +608,7 @@
                         let services = []
                         if(this.userReleaseBranch !== null && this.userReleaseBranch != "") {
                             const envIndex = data.values[0].indexOf('AJE-UAT');
-                            services = data.values.find(row => row[envIndex] === this.userReleaseBranch);
+                            services = data.values.filter(row => row[3] === this.userReleaseBranch).map(row => row[0]);
                         } else {
                             services = this.selectedServices
                         }
@@ -774,7 +774,7 @@
                         let services = []
                         if(this.userReleaseBranch !== null && this.userReleaseBranch != "") {
                             const envIndex = data.values[0].indexOf('AJE-UAT');
-                            services = data.values.find(row => row[envIndex] === this.userReleaseBranch);
+                            services = data.values.filter(row => row[3] === this.userReleaseBranch).map(row => row[0]);
                         } else {
                             services = this.selectedServices
                         }
